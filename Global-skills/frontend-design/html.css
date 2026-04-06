@@ -1,0 +1,196 @@
+/* ============================================================
+   Frontend Design System — html.css
+   Paste this <link> or <style> block into any HTML document.
+   All tokens are CSS custom properties on :root.
+   ============================================================ */
+
+/* Google Fonts — Inter + Noto Sans SC (CJK web fallback) */
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap'); */
+
+/* ── Tokens ── */
+:root {
+  --bg:          #F7F6FA;
+  --surface:     #ECEAF5;
+  --accent:      #5B5EA6;
+  --accent-soft: #ECEAF5;
+  --text:        #23243A;
+  --muted:       #8A8CA8;
+  --border:      #D8D6EC;
+
+  --font-base: "Inter", "PingFang SC", "Hiragino Sans",
+               "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: "JetBrains Mono", "Noto Sans Mono CJK SC", monospace;
+
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   14px;
+  --radius-pill: 99px;
+
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Base ── */
+body {
+  font-family: var(--font-base);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* ── Typography ── */
+h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; }
+h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.3; }
+h3 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.4; }
+h4 { font-size: 16px; font-weight: 600; line-height: 1.5; }
+h1, h2, h3, h4 { color: var(--text); margin-bottom: var(--space-3); }
+
+p  { font-size: 16px; color: var(--text); margin-bottom: var(--space-4); line-height: 1.7; }
+
+.lead    { font-size: 20px; color: var(--muted); line-height: 1.6; }
+.caption { font-size: 12px; color: var(--muted); }
+
+code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent);
+  background: var(--surface);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── Divider ── */
+hr { border: none; border-top: 1px solid var(--border); margin: var(--space-5) 0; }
+
+/* ── Tags / Badges ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.02em;
+}
+.tag-accent  { background: var(--accent);      color: var(--bg); }
+.tag-soft    { background: var(--accent-soft);  color: var(--accent); }
+.tag-outline { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+.tag-muted   { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-base);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: opacity 0.15s, transform 0.1s;
+  text-decoration: none;
+}
+.btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn-primary   { background: var(--accent);  color: var(--bg); }
+.btn-secondary { background: var(--surface); color: var(--accent); border: 1.5px solid var(--border); }
+.btn-ghost     { background: transparent;    color: var(--accent); }
+.btn-sm        { font-size: 12px; padding: 5px 12px; }
+
+/* ── Card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+/* ── Code block ── */
+.code-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+/* Optional syntax hint classes */
+.code-block .kw  { color: var(--accent); font-weight: 600; }
+.code-block .str { color: #5E9E6A; }
+.code-block .cmt { color: var(--muted); font-style: italic; }
+.code-block .num { color: #C48060; }
+
+/* ── Callout ── */
+.callout {
+  display: flex;
+  gap: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-size: 14px;
+}
+.callout p { margin: 0; }
+
+/* ── Table ── */
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  border-bottom: 1.5px solid var(--border);
+}
+td { padding: var(--space-3); border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+
+/* ── Document Header (portrait page) ── */
+.doc-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+.doc-header .meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.doc-header .date { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+.doc-header .author { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-4); }
+.avatar {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.author-name { font-size: 14px; font-weight: 600; }
+.author-role { font-size: 12px; color: var(--muted); }
+
+/* ── Page layout helper ── */
+.page { max-width: 860px; margin: 0 auto; padding: var(--space-7) var(--space-6); }

@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+._.DS_Store
+.AppleDouble
+.LSOverride
+
+# Nested git repos (prevent accidental submodules)
+**/.git/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
