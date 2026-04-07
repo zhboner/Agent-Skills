@@ -4,12 +4,30 @@ description: Use this skill whenever the user wants to do anything with PDF file
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
-## ⚠️ Execution Environment
+## Available Scripts (Base directory: same as this file)
+
+This skill includes a `scripts/` directory with **8 ready-to-use Python scripts**. All must be executed with `uv run` — do NOT use `python`.
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/check_fillable_fields.py` | Check if a PDF has fillable form fields |
+| `scripts/extract_form_field_info.py` | Extract fillable field metadata to JSON |
+| `scripts/fill_fillable_fields.py` | Fill fillable form fields from a JSON values file |
+| `scripts/extract_form_structure.py` | Extract text labels, lines, checkboxes from non-fillable PDFs |
+| `scripts/check_bounding_boxes.py` | Validate bounding boxes before filling non-fillable forms |
+| `scripts/fill_pdf_form_with_annotations.py` | Add text annotations to non-fillable PDFs |
+| `scripts/convert_pdf_to_images.py` | Convert PDF pages to PNG/JPG images |
+| `scripts/create_validation_image.py` | Create visual validation overlays for filled forms |
+
+**Usage pattern:** `uv run scripts/<script_name>.py <args...>`
+
+## Execution Environment
 
 **All Python scripts in this skill MUST be executed using `uv run`.**
 
-Do NOT use `python script.py` or `pip install`.
-The provided scripts include PEP 723 inline metadata (`# /// script ... # ///`), allowing `uv` to automatically resolve dependencies and create isolated environments.
+- NEVER use `python script.py`
+- NEVER use `pip install` — scripts include PEP 723 inline metadata (`# /// script ... # ///`), so `uv run` automatically resolves and installs all dependencies
+- NEVER attempt to manually install packages. If a dependency is missing, the script's inline metadata is incomplete — fix the metadata instead
 
 **Correct Usage:**
 ```bash
@@ -17,9 +35,24 @@ uv run scripts/check_fillable_fields.py document.pdf
 uv run scripts/extract_form_structure.py input.pdf output.json
 ```
 
+## Read REFERENCE.md Before Advanced Operations
+
+This file (SKILL.md) covers common PDF tasks. **If your task is not covered here, or you need advanced features (pypdfium2 rendering, JavaScript libraries, batch processing, troubleshooting), read REFERENCE.md before attempting anything.** It is in the same directory as this file.
+
 ## Overview
 
-This guide covers essential PDF processing operations using Python libraries and command-line tools. For advanced features, JavaScript libraries, and detailed examples, see REFERENCE.md. If you need to fill out a PDF form, read FORMS.md and follow its instructions.
+This guide covers essential PDF processing operations. It is a quick-start reference — for anything beyond the basics, read **REFERENCE.md** first. It contains:
+
+- **pypdfium2** — fast PDF rendering, image generation, text extraction (Chromium's PDFium engine)
+- **pdf-lib (JavaScript)** — advanced PDF creation, modification, form filling
+- **pdfjs-dist (JavaScript)** — browser-based PDF rendering, text extraction with coordinates
+- **Advanced CLI operations** — poppler-utils, qpdf optimization, encryption, repair
+- **Advanced Python techniques** — pdfplumber with custom table settings, reportlab with styled tables
+- **Complex workflows** — figure extraction, batch processing with error handling, PDF cropping
+- **Performance optimization** — handling large PDFs, memory management, tool selection guidance
+- **Troubleshooting** — encrypted PDFs, corrupted files, text extraction fallbacks
+
+If you need to fill out a PDF form, read **FORMS.md** and follow its instructions.
 
 ## Quick Start
 
@@ -242,8 +275,22 @@ pdftk input.pdf rotate 1east output rotated.pdf
 ## Common Tasks
 
 ### Extract Text from Scanned PDFs
+
+**Decision: How to handle scanned/image-based PDFs**
+
+1. **If the model supports image understanding** (can read image files via the `read` tool) **AND the PDF has ≤ 5 pages**: Convert PDF pages to images and pass them directly to the model for text extraction. This is faster and more accurate than OCR for short documents.
+   - Use `scripts/convert_pdf_to_images.py` to convert PDF pages to images.
+   - Pass the images to the model using the `read` tool.
+
+2. **If the model does NOT support image understanding, OR the PDF has > 5 pages**: Use OCR via pytesseract. This is more reliable for long documents and avoids context window limits.
+   - Run scripts with `uv run` — scripts include PEP 723 inline metadata (`# /// script ... # ///`), so `uv` auto-resolves dependencies.
+   - Do NOT use `pip install`.
+
 ```python
-# Requires: pip install pytesseract pdf2image
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pytesseract", "pdf2image"]
+# ///
 import pytesseract
 from pdf2image import convert_from_path
 
@@ -259,6 +306,8 @@ for i, image in enumerate(images):
 
 print(text)
 ```
+
+**Run with:** `uv run scripts/ocr_scanned_pdf.py scanned.pdf`
 
 ### Add Watermark
 ```python
@@ -314,12 +363,11 @@ with open("encrypted.pdf", "wb") as output:
 | Extract tables | pdfplumber | `page.extract_tables()` |
 | Create PDFs | reportlab | Canvas or Platypus |
 | Command line merge | qpdf | `qpdf --empty --pages ...` |
-| OCR scanned PDFs | pytesseract | Convert to image first |
-| Fill PDF forms | pdf-lib or pypdf (see FORMS.md) | See FORMS.md |
+| Scanned PDFs (multimodal model) | Convert to images + model vision | `scripts/convert_pdf_to_images.py` |
+| Scanned PDFs (non-multimodal) | pytesseract via `uv run` | See "Extract Text from Scanned PDFs" |
+| Fill PDF forms | See FORMS.md | See FORMS.md |
 
 ## Next Steps
 
-- For advanced pypdfium2 usage, see REFERENCE.md
-- For JavaScript libraries (pdf-lib), see REFERENCE.md
-- If you need to fill out a PDF form, follow the instructions in FORMS.md
-- For troubleshooting guides, see REFERENCE.md
+- **Before attempting any advanced operation**, read REFERENCE.md — it has detailed examples, performance tips, and troubleshooting for every tool listed above.
+- If you need to fill out a PDF form, follow the instructions in FORMS.md.
