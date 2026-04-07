@@ -21,7 +21,9 @@ This skill includes a `scripts/` directory with **8 ready-to-use Python scripts*
 
 **Usage pattern:** `uv run scripts/<script_name>.py <args...>`
 
-## Execution Environment
+## Execution Environment and Guidelines
+
+### Running Scripts
 
 **All Python scripts in this skill MUST be executed using `uv run`.**
 
@@ -34,6 +36,34 @@ This skill includes a `scripts/` directory with **8 ready-to-use Python scripts*
 uv run scripts/check_fillable_fields.py document.pdf
 uv run scripts/extract_form_structure.py input.pdf output.json
 ```
+
+### Temporary Files and Directories
+
+**Unless the user explicitly requests a specific output location, always use temporary directories for intermediate files.**
+
+This applies to all scripts and operations that generate intermediate files (images, extracted data, temporary PDFs, etc.).
+
+**Ways to create temporary directories:**
+
+1. **Bash (cross-platform):**
+   ```bash
+   temp_dir=$(mktemp -d)
+   uv run scripts/convert_pdf_to_images.py input.pdf "$temp_dir"
+   ```
+
+2. **Python:**
+   ```python
+   import tempfile
+   temp_dir = tempfile.mkdtemp(prefix="pdf_")
+   ```
+
+3. **Let scripts auto-create:** When scripts support it, omit the output directory to use a temporary location:
+   ```bash
+   uv run scripts/convert_pdf_to_images.py input.pdf
+   # Output: Created temporary directory: /tmp/pdf_images_abc123/
+   ```
+
+**Core principle:** Only save to user-specified locations when explicitly requested. Temporary directories are automatically cleaned up by the system, preventing file clutter.
 
 ## Read REFERENCE.md Before Advanced Operations
 
@@ -279,7 +309,7 @@ pdftk input.pdf rotate 1east output rotated.pdf
 **Decision: How to handle scanned/image-based PDFs**
 
 1. **If the model supports image understanding** (can read image files via the `read` tool) **AND the PDF has ≤ 5 pages**: Convert PDF pages to images and pass them directly to the model for text extraction. This is faster and more accurate than OCR for short documents.
-   - Use `scripts/convert_pdf_to_images.py` to convert PDF pages to images.
+   - Use `scripts/convert_pdf_to_images.py <pdf> [output_dir]` to convert PDF pages to images. If output_dir is not provided, a temporary directory will be created automatically.
    - Pass the images to the model using the `read` tool.
 
 2. **If the model does NOT support image understanding, OR the PDF has > 5 pages**: Use OCR via pytesseract. This is more reliable for long documents and avoids context window limits.
@@ -363,7 +393,7 @@ with open("encrypted.pdf", "wb") as output:
 | Extract tables | pdfplumber | `page.extract_tables()` |
 | Create PDFs | reportlab | Canvas or Platypus |
 | Command line merge | qpdf | `qpdf --empty --pages ...` |
-| Scanned PDFs (multimodal model) | Convert to images + model vision | `scripts/convert_pdf_to_images.py` |
+| Scanned PDFs (multimodal model) | Convert to images + model vision | `scripts/convert_pdf_to_images.py <pdf> [output_dir]` |
 | Scanned PDFs (non-multimodal) | pytesseract via `uv run` | See "Extract Text from Scanned PDFs" |
 | Fill PDF forms | See FORMS.md | See FORMS.md |
 

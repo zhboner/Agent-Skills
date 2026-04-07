@@ -52,7 +52,10 @@ If the PDF has fillable form fields:
 ]
 ```
 - Convert the PDF to PNGs (one image for each page) with this script (run from this file's directory):
-`uv run scripts/convert_pdf_to_images.py <file.pdf> <output_directory>`
+`uv run scripts/convert_pdf_to_images.py <file.pdf> [output_directory]`
+
+If output_directory is not provided, a temporary directory will be created automatically. The script will print the path to the created directory.
+
 Then analyze the images to determine the purpose of each form field (make sure to convert the bounding box PDF coordinates to image coordinates).
 - Create a `field_values.json` file in this format with the values to be entered for each field:
 ```
@@ -176,7 +179,9 @@ Use this when the PDF is scanned/image-based and structure extraction found no u
 
 ### B.1: Convert PDF to Images
 
-`uv run scripts/convert_pdf_to_images.py <input.pdf> <images_dir/>`
+`uv run scripts/convert_pdf_to_images.py <input.pdf> [images_dir/]`
+
+If images_dir is not provided, a temporary directory will be created automatically.
 
 ### B.2: Initial Field Identification
 
@@ -259,7 +264,7 @@ This checks for intersecting bounding boxes and entry boxes that are too small f
 Use this when structure extraction works for most fields but misses some elements (e.g., circular checkboxes, unusual form controls).
 
 1. **Use Approach A** for fields that were detected in form_structure.json
-2. **Convert PDF to images** for visual analysis of missing fields
+2. **Convert PDF to images** for visual analysis of missing fields (temporary directory will be created automatically if output not specified)
 3. **Use zoom refinement** (from Approach B) for the missing fields
 4. **Combine coordinates**: For fields from structure extraction, use `pdf_width`/`pdf_height`. For visually-estimated fields, you must convert image coordinates to PDF coordinates:
    - pdf_x = image_x * (pdf_width / image_width)
@@ -287,7 +292,9 @@ The fill script auto-detects the coordinate system and handles conversion:
 ## Step 4: Verify Output
 
 Convert the filled PDF to images and verify text placement:
-`uv run scripts/convert_pdf_to_images.py <output.pdf> <verify_images/>`
+`uv run scripts/convert_pdf_to_images.py <output.pdf> [verify_images/]`
+
+If verify_images is not provided, a temporary directory will be created automatically.
 
 If text is mispositioned:
 - **Approach A**: Check that you're using PDF coordinates from form_structure.json with `pdf_width`/`pdf_height`
