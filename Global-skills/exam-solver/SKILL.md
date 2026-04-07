@@ -58,6 +58,8 @@ task(
   description="Solve Question [N]",
   prompt=`TASK: Solve Question [N] from the exam paper. Write a detailed Chinese solution with step-by-step reasoning.
 
+⚠️ LANGUAGE RULE: The ENTIRE output document must be in Chinese. All section headers, explanations, reasoning, and commentary MUST use Chinese. Only preserve English for: (1) technical terms in the format 中文 (English), (2) the original exam question text, (3) LaTeX formulas. Do NOT use English section headers like "Solution", "Analysis", "Step 1" — use their Chinese equivalents.
+
 EXPECTED OUTCOME: Return the complete markdown-formatted solution block for Question [N] as your final message. DO NOT write to any file — just return the content.
 
 ⚠️ CRITICAL: You are a delegated executor. Do NOT re-delegate this task. Do NOT use the write tool. Return the solution content directly in your response.
@@ -72,9 +74,9 @@ MUST DO:
 - Include units for Physics/Chemistry. Match 3 significant figures if unspecified.
 - Format your output exactly like this:
 
-## Question [N] ([X] marks)
+## 第 [N] 题（[X] 分）
 
-**Question:** [Original question text or key summary]
+**题目：** [Original question text or key summary]
 
 ### 解题思路
 
@@ -92,11 +94,11 @@ MUST DO:
 - [Formula 2 in LaTeX]: [Brief explanation of when/why to use it]
 - ...
 
-### Solution
+### 解答过程
 
 [Your detailed step-by-step solution]
 
-**Final Answer:** $\boxed{answer}$
+**最终答案：** $\boxed{answer}$
 
 ---
 
@@ -146,11 +148,11 @@ Only the main process writes the final file, combining:
 3. **Proofreading Report** (after Phase 3)
 
 ```markdown
-# [Exam Name / Subject] — Complete Solutions
+# [考试名称 / 科目] 完整解答
 
-> Exam Board: [A Level / IB / AP / GCSE / etc.]
-> Subject: [Mathematics / Physics / Chemistry / etc.]
-> Solution Language: Chinese (with English technical terms)
+> 考试委员会：[A Level / IB / AP / GCSE / 等]
+> 科目：[数学 / 物理 / 化学 / 等]
+> 解答语言：中文（专业术语保留英文）
 
 ---
 
@@ -162,7 +164,7 @@ Only the main process writes the final file, combining:
 
 ---
 
-## Proofreading Report
+## 校对报告
 
 [Results from Phase 3]
 ```
@@ -175,12 +177,19 @@ Only the main process writes the final file, combining:
 
 ### Language Requirements
 
-Write all solution content in **Chinese** with English technical terms preserved alongside using the format `中文术语 (English Term)`.
+**⚠️ CRITICAL: ALL solution output must be in Chinese.** The final `.md` file is a Chinese-language document. English is only permitted in three cases:
 
-- Examples: 导数 (Derivative), 链式法则 (Chain Rule), 定义域 (Domain)
+1. **Technical terms** — use bilingual format: `中文术语 (English Term)`
+   - Examples: 导数 (Derivative), 链式法则 (Chain Rule), 定义域 (Domain)
+2. **Original exam question text** — keep the question as-is for reference
+3. **LaTeX formulas** — standard mathematical notation
+
+**Forbidden:** English section headers (`Solution`, `Analysis`, `Step 1`, `Given`, `To prove`, etc.), English explanatory prose, English reasoning text.
+
 - Mathematical formulas use standard LaTeX: `$E = mc^2$` or `$$\int_0^1 x^2 \, dx$$`
+- Physics/Chemistry answers must carry correct units (e.g., $\text{m s}^{-2}$, $\text{mol dm}^{-3}$)
 
-This bilingual approach helps students studying in English-medium programs who think in Chinese — they can map concepts back to their exam vocabulary.
+This ensures the final document reads naturally as a Chinese study resource while preserving exam vocabulary for reference.
 
 ### Solution Depth
 
@@ -212,16 +221,16 @@ A student should be able to read the solution and understand not just *what* the
 - $[formula_1]$: [When/why to use]
 - $[formula_2]$: [When/why to use]
 
-### Solution
+### 解答过程
 
-**Step 1:** [Brief statement of what this step accomplishes]
+**步骤 1：** [Brief statement of what this step accomplishes]
 [Detailed calculation or derivation]
 *Note: This applies [formula/theorem name] because [reason/condition].*
 
-**Step 2:** [Continue...]
+**步骤 2：** [Continue...]
 ...
 
-**Final Answer:** $\boxed{answer}$
+**最终答案：** $\boxed{answer}$
 ```
 
 **Proof:**
@@ -240,13 +249,13 @@ A student should be able to read the solution and understand not just *what* the
 
 - $[formula_1]$: [When/why to use]
 
-### Proof
+### 证明过程
 
-- Given: [List known conditions]
-- To prove: [State the conclusion to be proven]
-- Proof: [Step-by-step derivation, each step labeled with its justification]
+- **已知：** [List known conditions]
+- **求证：** [State the conclusion to be proven]
+- **证明：** [Step-by-step derivation, each step labeled with its justification]
 
-$\blacksquare$ Q.E.D.
+$\blacksquare$ 证毕
 ```
 
 **Multiple Choice:**
@@ -264,14 +273,14 @@ $\blacksquare$ Q.E.D.
 
 - $[formula]$: [If applicable]
 
-### Analysis
+### 选项分析
 
-- Option A: [Why it is correct or incorrect]
-- Option B: [Why it is correct or incorrect]
-- Option C: [Why it is correct or incorrect]
-- Option D: [Why it is correct or incorrect]
+- **选项 A：** [Why it is correct or incorrect]
+- **选项 B：** [Why it is correct or incorrect]
+- **选项 C：** [Why it is correct or incorrect]
+- **选项 D：** [Why it is correct or incorrect]
 
-**Final Answer:** $\boxed{\text{X}}$, because [core reason]
+**最终答案：** $\boxed{\text{X}}$，因为 [core reason]
 ```
 
 **Graph / Diagram:**
@@ -290,15 +299,15 @@ $\blacksquare$ Q.E.D.
 
 - $[formula_1]$: [When/why to use]
 
-### Diagram Analysis
+### 图表分析
 
 [Describe key data points, trends, intersections read from the visual]
 
-### Solution
+### 解答过程
 
 [Derivation incorporating the diagram data]
 
-**Final Answer:** $\boxed{answer}$
+**最终答案：** $\boxed{answer}$
 ```
 
 ### Answering Guidelines
@@ -340,6 +349,8 @@ After receiving the proofreading results, apply all corrections to the final out
 
 ## Output Format — File Only, Never Chat
 
+**⚠️ CRITICAL: The output file is a Chinese-language document. Every section header, explanation, reasoning step, and commentary must be in Chinese. Do NOT produce English prose in the final output.**
+
 **CRITICAL: Write the complete solution to a `.md` file. Do NOT output the solution content to the chat window.**
 
 **Output path resolution (in priority order):**
@@ -349,7 +360,7 @@ After receiving the proofreading results, apply all corrections to the final out
 4. **Metadata missing fallback** → `Solutions_YYYY-MM-DD.md`
 
 - Use the `write` tool to create the file
-- In the chat, only confirm: "✅ Generated solutions: `[filepath]`, [N] questions, complete step-by-step solutions with proofreading report."
+- In the chat, only confirm: "✅ 已生成解答：`[filepath]`，共 [N] 题，包含完整解题步骤和校对报告。"
 - If the file is very large, still write it to disk — never split output across chat messages
 
 ## Workflow Summary
