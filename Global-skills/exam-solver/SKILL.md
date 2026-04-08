@@ -11,6 +11,26 @@ This skill handles the complete workflow of extracting questions from exam PDFs 
 
 ## Phase 1: PDF Content Extraction & Structuring
 
+**FIRST ACTION — before anything else:** Use TodoWrite to create the following tasks. You MUST mark each one complete as you finish it. Do not claim the work is done until every todo is checked off.
+
+```
+TodoWrite([
+  { id: "meta",      content: "Extract metadata: exam name, subject, level for filename",                    status: "in_progress" },
+  { id: "extract",   content: "Extract ALL questions — verify none are skipped",                             status: "pending" },
+  { id: "solve",     content: "Every question has a complete solution",                                      status: "pending" },
+  { id: "approach",  content: "Every solution has an approach section (解题思路)",                           status: "pending" },
+  { id: "kpoints",   content: "Every solution lists knowledge points (涉及知识点) with full explanations",  status: "pending" },
+  { id: "formulas",  content: "Every solution lists formulas (涉及公式) in proper LaTeX",                   status: "pending" },
+  { id: "reasoning", content: "Every solution shows full reasoning, not just the answer",                    status: "pending" },
+  { id: "bilingual", content: "Technical terms use bilingual format (Chinese + English in parentheses)",     status: "pending" },
+  { id: "units",     content: "Physics/Chemistry answers include correct units",                             status: "pending" },
+  { id: "verify",    content: "All subagent results verified; retries applied where needed",                 status: "pending" },
+  { id: "proofread", content: "Proofreading agent (category=deep) has run and corrections applied",         status: "pending" },
+  { id: "order",     content: "Question solutions are assembled in correct numerical order",                 status: "pending" },
+  { id: "filepath",  content: "Output path resolved correctly; file written to disk (NOT chat)",             status: "pending" },
+])
+```
+
 Start by extracting the exam content. The `pdf` skill handles text extraction and OCR for scanned documents — use it as your primary tool.
 
 **What to capture for each question:**
@@ -47,68 +67,21 @@ Solve **every question** on the paper. The core principle: show the reader *how*
 
 Spawn one subagent per question. **Instruct subagents to RETURN their solution content, NOT write to file.**
 
-⚠️ **CRITICAL: Do NOT load `exam-solver` skill for subagents.** The subagent would read this same skill file and attempt to re-delegate, causing infinite recursion. Instead, inject the solving rules directly in the prompt below.
+⚠️ **CRITICAL: Do NOT load `exam-solver` skill for subagents** — it would trigger infinite recursion. Load `exam-solver-worker` instead, which contains only the solving rules.
 
 ```typescript
 // Replace [N] with the actual question number (e.g., 1, 2, 3...)
 task(
   category="deep",
-  load_skills=[],
+  load_skills=["exam-solver-worker"],
   run_in_background=true,
   description="Solve Question [N]",
-  prompt=`TASK: Solve Question [N] from the exam paper. Write a detailed Chinese solution with step-by-step reasoning.
+  prompt=`按照 exam-solver-worker skill 的规范，解答第 [N] 题。
 
-⚠️ LANGUAGE RULE: The ENTIRE output document must be in Chinese. All section headers, explanations, reasoning, and commentary MUST use Chinese. Only preserve English for: (1) technical terms in the format 中文 (English), (2) the original exam question text, (3) LaTeX formulas. Do NOT use English section headers like "Solution", "Analysis", "Step 1" — use their Chinese equivalents.
+⚠️ CRITICAL: 你是委托执行者。不要再次委派任务。不要使用 write 工具。直接在回复中返回解答内容。
 
-EXPECTED OUTCOME: Return the complete markdown-formatted solution block for Question [N] as your final message. DO NOT write to any file — just return the content.
-
-⚠️ CRITICAL: You are a delegated executor. Do NOT re-delegate this task. Do NOT use the write tool. Return the solution content directly in your response.
-
-MUST DO:
-- **Include a "解题思路" section** before the detailed solution: explain the overall approach, what the question is testing, and the key insight needed.
-- **List "涉及知识点"**: enumerate the knowledge points, concepts, and theorems this question tests.
-- **List "涉及公式"**: write out every formula used, with LaTeX notation, and briefly state when/why each is applied.
-- Show full working: state approach, show calculations, explain reasoning, box final answer.
-- Use Chinese with English technical terms: 导数 (Derivative), 链式法则 (Chain Rule).
-- Use LaTeX for math: $E = mc^2$ or $$\int_0^1 x^2 \, dx$$.
-- Include units for Physics/Chemistry. Match 3 significant figures if unspecified.
-- Format your output exactly like this:
-
-## 第 [N] 题（[X] 分）
-
-**题目：** [Original question text or key summary]
-
-### 解题思路
-
-[Overall approach: what this question is testing, the key insight, and the general strategy to solve it]
-
-### 涉及知识点
-
-- [Knowledge point 1]
-- [Knowledge point 2]
-- ...
-
-### 涉及公式
-
-- [Formula 1 in LaTeX]: [Brief explanation of when/why to use it]
-- [Formula 2 in LaTeX]: [Brief explanation of when/why to use it]
-- ...
-
-### 解答过程
-
-[Your detailed step-by-step solution]
-
-**最终答案：** $\boxed{answer}$
-
----
-
-MUST NOT DO:
-- Do NOT use the write tool — return content only.
-- Do NOT re-delegate this task to other agents.
-- Do NOT skip any sub-question (a, b, c / i, ii, iii).
-- Do NOT output only the final answer — show full working.
-
-CONTEXT: [Paste the extracted question text for Question [N] here]`
+CONTEXT:
+[Paste the extracted question text for Question [N] here]`
 )
 ```
 
@@ -122,7 +95,9 @@ Q3 → task_id: "task_ghi789"
 
 ### Step 2: Collect Results and Assemble in Order
 
-After launching all subagents in the background, **end your response and wait for the system `<system-reminder>` notification** for each task completion. Do NOT poll `background_output` on running tasks.
+After launching all background tasks, you MUST **immediately stop generating output**. Write nothing further — no summaries, no "I've launched X tasks", no closing remarks. Your response ends the moment the last `task(run_in_background=true)` call is made.
+
+**You will be notified automatically** via `<system-reminder>` when each task completes. Only after receiving notifications for ALL tasks should you proceed to collect results. Do NOT call `background_output` on a task that has not yet sent a completion notification — it will block or return empty results.
 
 Once all tasks are complete, collect results **in question order** (NOT by completion time):
 
@@ -145,7 +120,6 @@ Only the main process writes the final file, combining:
 
 1. **Header** (title, metadata)
 2. **Question solutions** (in numerical order 1, 2, 3...)
-3. **Proofreading Report** (after Phase 3)
 
 ```markdown
 # [考试名称 / 科目] 完整解答
@@ -161,12 +135,6 @@ Only the main process writes the final file, combining:
 [Question 2 solution from subagent]
 
 [Question 3 solution from subagent]
-
----
-
-## 校对报告
-
-[Results from Phase 3]
 ```
 
 **Output path decision:**
@@ -175,147 +143,12 @@ Only the main process writes the final file, combining:
 - **User did not specify** → Use the default naming rule: `[ExamName]_[Subject]_Solutions.md`, write to the current working directory.
 - **Metadata missing fallback** → `Solutions_YYYY-MM-DD.md`
 
-### Language Requirements
+**Writing rules:**
+- Use the `write` tool to create the file
+- In the chat, only confirm: "✅ 已生成解答：`[filepath]`，共 [N] 题，包含完整解题步骤和校对报告。"
+- If the file is very large, still write it to disk — never split output across chat messages
 
-**⚠️ CRITICAL: ALL solution output must be in Chinese.** The final `.md` file is a Chinese-language document. English is only permitted in three cases:
-
-1. **Technical terms** — use bilingual format: `中文术语 (English Term)`
-   - Examples: 导数 (Derivative), 链式法则 (Chain Rule), 定义域 (Domain)
-2. **Original exam question text** — keep the question as-is for reference
-3. **LaTeX formulas** — standard mathematical notation
-
-**Forbidden:** English section headers (`Solution`, `Analysis`, `Step 1`, `Given`, `To prove`, etc.), English explanatory prose, English reasoning text.
-
-- Mathematical formulas use standard LaTeX: `$E = mc^2$` or `$$\int_0^1 x^2 \, dx$$`
-- Physics/Chemistry answers must carry correct units (e.g., $\text{m s}^{-2}$, $\text{mol dm}^{-3}$)
-
-This ensures the final document reads naturally as a Chinese study resource while preserving exam vocabulary for reference.
-
-### Solution Depth
-
-Each solution should read like a tutor walking a student through the problem:
-
-1. **State the approach** before executing it
-2. **Show the work** — calculations, algebraic manipulations, logical deductions
-3. **Explain the reasoning** — cite the theorem, formula, or principle being applied
-4. **Highlight the final answer** clearly so it is easy to locate
-
-A student should be able to read the solution and understand not just *what* the answer is, but *how* to arrive at it independently next time.
-
-### Strategies by Question Type
-
-**Calculation / Derivation** (Math, Physics, Chemistry computations):
-
-```markdown
-### 解题思路
-
-[Overall approach: what this question is testing, the key insight, and the general strategy]
-
-### 涉及知识点
-
-- [Knowledge point 1]
-- [Knowledge point 2]
-
-### 涉及公式
-
-- $[formula_1]$: [When/why to use]
-- $[formula_2]$: [When/why to use]
-
-### 解答过程
-
-**步骤 1：** [Brief statement of what this step accomplishes]
-[Detailed calculation or derivation]
-*Note: This applies [formula/theorem name] because [reason/condition].*
-
-**步骤 2：** [Continue...]
-...
-
-**最终答案：** $\boxed{answer}$
-```
-
-**Proof:**
-
-```markdown
-### 解题思路
-
-[Proof approach: e.g., "Use mathematical induction" or "Proof by contradiction", and why this method is chosen]
-
-### 涉及知识点
-
-- [Knowledge point 1]
-- [Knowledge point 2]
-
-### 涉及公式
-
-- $[formula_1]$: [When/why to use]
-
-### 证明过程
-
-- **已知：** [List known conditions]
-- **求证：** [State the conclusion to be proven]
-- **证明：** [Step-by-step derivation, each step labeled with its justification]
-
-$\blacksquare$ 证毕
-```
-
-**Multiple Choice:**
-
-```markdown
-### 解题思路
-
-[What concept this question tests, and the elimination strategy]
-
-### 涉及知识点
-
-- [Knowledge point 1]
-
-### 涉及公式
-
-- $[formula]$: [If applicable]
-
-### 选项分析
-
-- **选项 A：** [Why it is correct or incorrect]
-- **选项 B：** [Why it is correct or incorrect]
-- **选项 C：** [Why it is correct or incorrect]
-- **选项 D：** [Why it is correct or incorrect]
-
-**最终答案：** $\boxed{\text{X}}$，因为 [core reason]
-```
-
-**Graph / Diagram:**
-
-```markdown
-### 解题思路
-
-[What the diagram is showing, what data needs to be extracted, and the overall approach]
-
-### 涉及知识点
-
-- [Knowledge point 1]
-- [Knowledge point 2]
-
-### 涉及公式
-
-- $[formula_1]$: [When/why to use]
-
-### 图表分析
-
-[Describe key data points, trends, intersections read from the visual]
-
-### 解答过程
-
-[Derivation incorporating the diagram data]
-
-**最终答案：** $\boxed{answer}$
-```
-
-### Answering Guidelines
-
-- **Match the exam level:** A Level solutions should be noticeably deeper than GCSE; IB HL deeper than SL. Judge the level from the paper title or question complexity.
-- **Include units for Physics/Chemistry:** Numerical answers must carry correct units (e.g., $\text{m s}^{-2}$, $\text{mol dm}^{-3}$).
-- **Significant figures:** Follow the question's stated precision; if unspecified, default to 3 significant figures.
-- **Alternative methods:** If a question has a clearly different second approach, briefly note it after the main solution to broaden the student's perspective.
+> Solving format rules (language, structure, per-type templates, step requirements) are defined in `exam-solver-worker`. Subagents load that skill directly.
 
 ## Phase 3: Automated Proofreading
 
@@ -333,9 +166,9 @@ task(
 1. **Answer correctness:** Re-calculate key steps and verify the final answer is correct. Pay special attention to sign errors, unit conversions, and significant figures.
 2. **Step completeness:** Are there any skipped steps? Could a student reproduce the answer from these steps alone?
 3. **Approach section (解题思路):** Does every question have a clear approach section explaining the strategy and key insight?
-4. **Knowledge points (涉及知识点):** Are the relevant knowledge points listed for each question? Are they accurate and complete?
+4. **Knowledge points (涉及知识点):** Are the relevant knowledge points listed for each question? Are they accurate and complete? **Each knowledge point must be explained in detail — definition, principle, applicable conditions, and key takeaways. A bare name like "牛顿第二定律" with no explanation is NOT acceptable.**
 5. **Formulas (涉及公式):** Are all formulas used in the solution listed with proper LaTeX notation? Are they correctly stated?
-6. **Language quality:** Are technical terms accurately translated into Chinese? Is the prose natural and fluent?
+6. **Language quality:** Is the **entire solution written in Chinese** (except technical terms and formulas which may remain in English)? Are any sections accidentally written in English prose? Are technical terms accurately translated into Chinese? Is the prose natural and fluent?
 7. **Format compliance:** Does every question follow the required structure (approach → knowledge points → formulas → solution → final answer)? Are all LaTeX formulas properly closed?
 
 For each question, list any issues found along with the corrected content. If a question has no issues, mark it as '✅ No issues'.
@@ -345,23 +178,18 @@ Here are the solutions to proofread:
 )
 ```
 
-After receiving the proofreading results, apply all corrections to the final output file. Include a brief summary of what was fixed (or confirm that no issues were found) in the "Proofreading Report" section at the end of the file.
+After receiving the proofreading results:
+1. Apply all corrections directly to the relevant question sections in the file (use the `edit` tool).
+2. **Append** the proofreading report to the end of the file using the `edit` tool — add the following block after the last question:
 
-## Output Format — File Only, Never Chat
+```markdown
 
-**⚠️ CRITICAL: The output file is a Chinese-language document. Every section header, explanation, reasoning step, and commentary must be in Chinese. Do NOT produce English prose in the final output.**
+---
 
-**CRITICAL: Write the complete solution to a `.md` file. Do NOT output the solution content to the chat window.**
+## 校对报告
 
-**Output path resolution (in priority order):**
-1. **User specified a full file path** (e.g., `./solutions/math_paper1_solutions.md`) → Write directly to that path.
-2. **User specified a directory** (e.g., `./solutions/`) → Write into that directory with the default filename.
-3. **User did not specify** → Use the default naming rule `[ExamName]_[Subject]_Solutions.md`, write to the current working directory.
-4. **Metadata missing fallback** → `Solutions_YYYY-MM-DD.md`
-
-- Use the `write` tool to create the file
-- In the chat, only confirm: "✅ 已生成解答：`[filepath]`，共 [N] 题，包含完整解题步骤和校对报告。"
-- If the file is very large, still write it to disk — never split output across chat messages
+[逐题列出发现的问题及修正内容。无问题的题目标注"✅ 无问题"。]
+```
 
 ## Workflow Summary
 
@@ -376,7 +204,7 @@ Phase 1: Extract & Structure
     ↓
 Phase 2: Solve Questions (Parallel)
     ↓
-    Spawn subagents for each question (load_skills=[], return content, NOT write)
+    Spawn subagents for each question (load_skills=["exam-solver-worker"], return content, NOT write)
     ↓
     End response → wait for system <system-reminder> notifications
     ↓
@@ -394,22 +222,3 @@ Phase 3: Proofread (category="deep", synchronous)
     ↓
     Done!
 ```
-
-## Quality Checklist
-
-Before delivering the final answer, confirm each item:
-
-- [ ] **Metadata extracted**: exam name, subject, and level captured for filename
-- [ ] **Every question** on the paper has a solution — none skipped
-- [ ] Each solution includes an **approach section** (解题思路) with strategy and key insight
-- [ ] Each solution lists **knowledge points** (涉及知识点)
-- [ ] Each solution lists **formulas used** (涉及公式) in proper LaTeX
-- [ ] Each solution shows the **full reasoning process**, not just the answer
-- [ ] Technical terms use the **bilingual format** (Chinese with English in parentheses)
-- [ ] Physics/Chemistry answers include **correct units**
-- [ ] **Subagent results verified**: each question has complete content, retries applied if needed
-- [ ] The **proofreading agent** (category=deep) has run and its corrections have been applied
-- [ ] The output follows the **template structure** above
-- [ ] The complete solution is written to a **`.md` file** — NOT output to the chat window
-- [ ] **Question solutions are in correct order** — subagents returned content, main process assembled in order
-- [ ] **Output path correct** — user-specified path used if provided, else default naming applied
